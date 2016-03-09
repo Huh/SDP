@@ -2,89 +2,21 @@
 #  Mukacs Lab
 #  03/07/2016
 ################################################################################
+
 #  Load packages
 library(dplyr)
 library(ggplot2)
 library(reshape)
 library(wesanderson)
 library(grid)
+################################################################################
 
-# Function to simulate mountain lion population
-              sim_pop <- function(nyr, n1, fphi, mphi, fec){
-                #  A function to simulate mountain lion population dynamics
-                #  Takes 
-                #   nyr - a single numeric value representing the number of years to
-                #     simulate
-                #   n1 - a 4 x 2 matrix of population sizes in year 1, rows 
-                #    represent the age of the animal while columns are sex
-                #   fphi, mphi - a 4 x 2 matrix where the rows represent the 
-                #    ageclass of the animals and the columns the lower and upper 
-                #    limits of survival, fphi is female, mphi is male
-                #   fec - a vector of length 2 (numeric) representing the lower (1)
-                #     and upper (2) limits of fecundity (litter size) for the 4th 
-                #     age class
-                
-                #  Returns - sex = 1 when female
-                #   N - an array of population sizes [year, age, sex]
-                #   PHI - an array of survival terms [year, age, sex]
-                #   FEC - a numeric vector of fecundity terms
-                
-                #  TODO 
-                #   add harvest
-                #   add process error?
-                
-                #  Check inputs
-                stopifnot(nrow(n1) == 4 && ncol(n1) == 2)
-                stopifnot(nrow(fphi) == 4 && ncol(fphi) == 2)
-                stopifnot(nrow(mphi) == 4 && ncol(mphi) == 2)      
-                stopifnot(length(fec) == 2)
-                stopifnot(is.numeric(n1) && is.numeric(fphi) && is.numeric(mphi) &&
-                  is.numeric(fec))
-                
-                #  Initialize parameters
-                N <- PHI <- array(NA, dim = c(nyr, 4, 2), 
-                  dimnames = list(Year = 1:nyr, Age = 1:4, 
-                    Sex = c("Female", "Male")))
-                
-                #  First year population size
-                N[1,,] <- n1
+#  Source simulation function code
+source(file.path("C:/Users", 
+                                   Sys.info()["login"],
+                                   "Documents/GitHub/SDP/SimulationFunctions/mtlion_sim_fun.R"))
 
-                #  Draw survival values for each year
-                #  Female survival
-                PHI[,,1] <- sapply(1:4, function(i){
-                          round(runif(nyr, fphi[i,1], fphi[i,2]), 2)
-                })  
-                #  Male Survival
-                PHI[,,2] <- sapply(1:4, function(i){
-                          round(runif(nyr, mphi[i,1], mphi[i,2]), 2)
-                })  
-                
-                #  Draw fecundity values for each year    
-                FEC <- round(runif(nyr, fec[1], fec[2]), 2)      
-
-                    #  Loop over years and sexes to grow population
-                for(y in 2:nyr){
-                  for(sex in 1:2){
-                    #  0-6 months 
-                    N[y,1,sex] <- round((N[y-1,4,1] * PHI[y-1,4,1] ^ (7/12)) * 
-                      FEC[y-1] * 0.25 * PHI[y-1,1,sex] ^ (5/12))
-
-                    #  6-18 months
-                    N[y,2,sex] <- N[y-1,1,sex] * PHI[y-1,2,sex]
-
-                    #  18-30 months
-                    N[y,3,sex] <- N[y-1,2,sex] * PHI[y-1,3,sex]
-
-                    #  30+ months
-                    N[y,4,sex] <- (N[y-1,4,sex] + N[y-1,3,sex]) * PHI[y-1,4,sex]       
-                  }  #  Close sex loop
-                } #  Close year loop
-              
-              list(N = N, PHI = PHI, FEC = FEC)
-              }
-
-
-#  Iterate and save data from many simulations
+#  Determine number of iterations and years
 tot_sims <- 100
 nyr <- 50
 
@@ -99,30 +31,26 @@ m_N_mat2 <- matrix(NA, nrow = nyr, ncol = tot_sims)
 m_N_mat3 <- matrix(NA, nrow = nyr, ncol = tot_sims)
 m_N_mat4 <- matrix(NA, nrow = nyr, ncol = tot_sims)
 
-
 #  Run for tot_sims iterations and save within appropriate age class
 for(j in 1:tot_sims){
 
-     sims <- sim_pop(nyr = 50, 
-                                          n1 = matrix(
-                                              c(30, 30, 
-                                                  20, 20,    
-                                                  60, 40,
-                                                  120, 80), 
-                                                  ncol = 2, byrow = T),
-                                          fphi = matrix(
-                                              c(0.6, 0.7, 
-                                                  0.4, 0.6, 
-                                                  0.7, 0.8, 
-                                                  0.8, 0.9), 
-                                                  ncol = 2, byrow = T),
-                                          mphi = matrix(
-                                              c(0.6, 0.7, 
-                                                  0.4, 0.6, 
-                                                  0.5, 0.8, 
-                                                  0.6, 0.9), 
-                                                  ncol = 2, byrow = T),
-                                          fec = c(1, 3))
+     sims <- sim_pop(nyr = nyr, 
+                                        n1 = matrix(c(30, 30, 
+                                                                    20, 20,    
+                                                                    60, 40,
+                                                                    120, 80), 
+                                                                    ncol = 2, byrow = T),
+                                        fphi = matrix( c(0.6, 0.7, 
+                                                                         0.4, 0.6, 
+                                                                         0.7, 0.8, 
+                                                                         0.8, 0.9), 
+                                                                         ncol = 2, byrow = T),
+                                        mphi = matrix( c(0.6, 0.7, 
+                                                                           0.4, 0.6, 
+                                                                           0.5, 0.8, 
+                                                                           0.6, 0.9), 
+                                                                           ncol = 2, byrow = T),
+                                        fec = c(1, 3))
                                           
   f_N_mat1[,j] <- sims$N[,1,1]
   f_N_mat2[,j] <- sims$N[,2,1]
@@ -135,8 +63,7 @@ for(j in 1:tot_sims){
   m_N_mat4[,j] <- sims$N[,4,2]
   }
 
-
-#  Generata data frame for each age class/sex for plotting
+#  Generata data frame for each age class/sex and total N/sex for plotting
 #   all iterations for each age class/sex combo in a single plot.
 Year <- seq(1, 50, 1)
  
@@ -227,10 +154,10 @@ pop_all_m <- pop_tmp %>%
                            as.data.frame()
 
 
-#  Plots for females
+#  Plots using stat_summary for means
 plot_1_f <- ggplot(pop_age1_f, aes(x = Year, y = value, group = simulation)) + 
                        geom_point(colour = "#3B9AB2", alpha = 0.4) +
-                       geom_line(stat="smooth", method = "loess", colour = "#78B7C5", se = F, size = 0.1, alpha = 0.4) +
+                       stat_summary(aes(group = 1), geom = "line", fun.y = mean, colour = "#3B9AB2", size = 3, alpha = 0.4) +
                        xlab("Year") +
                        ylab("Population Size\n") +
                        ylim(0,100) +
@@ -245,7 +172,7 @@ plot_1_f <- ggplot(pop_age1_f, aes(x = Year, y = value, group = simulation)) +
 
 plot_2_f <- ggplot(pop_age2_f, aes(x = Year, y = value, group = simulation)) + 
                        geom_point(colour = "#E1AF00", alpha = 0.4) +
-                       geom_line(stat="smooth", method = "loess", colour = "#EBCC2A", se = F, size = 0.1, alpha = 0.4) +
+                      stat_summary(aes(group = 1), geom = "line", fun.y = mean, colour = "#E1AF00", size = 3, alpha = 0.4) +
                        xlab("Year") +
                        ylab("Population Size\n") +
                        ylim(0,100) +
@@ -260,7 +187,7 @@ plot_2_f <- ggplot(pop_age2_f, aes(x = Year, y = value, group = simulation)) +
 
 plot_3_f <- ggplot(pop_age3_f, aes(x = Year, y = value, group = simulation)) + 
                        geom_point(colour = "#446455", alpha = 0.4) +
-                       geom_line(stat="smooth", method = "loess", colour = "#81A88D", se = F, size = 0.1, alpha = 0.4) +
+                       stat_summary(aes(group = 1), geom = "line", fun.y = mean, colour = "#446455", size = 3, alpha = 0.4) +
                        xlab("Year") +
                        ylab("Population Size\n") +
                        ylim(0,100) +
@@ -275,7 +202,7 @@ plot_3_f <- ggplot(pop_age3_f, aes(x = Year, y = value, group = simulation)) +
 
 plot_4_f <- ggplot(pop_age4_f, aes(x = Year, y = value, group = simulation)) + 
                        geom_point(colour = "#972D15", alpha = 0.4) +
-                       geom_line(stat="smooth", method = "loess", colour = "#E66447", se = F, size = 0.1, alpha = 0.4) +
+                       stat_summary(aes(group = 1), geom = "line", fun.y = mean, colour = "#972D15", size = 3, alpha = 0.4) +
                        xlab("Year") +
                        ylab("Population Size\n") +
                        ylim(0,200) +
@@ -289,8 +216,8 @@ plot_4_f <- ggplot(pop_age4_f, aes(x = Year, y = value, group = simulation)) +
                        panel.background = element_blank())
 
 plot_all_f <- ggplot(pop_all_f, aes(x = pop_year, y = total_pop, group = sim_num)) + 
-                       geom_point(colour = "#972D15", alpha = 0.4) +
-                       geom_line(stat="smooth", method = "loess", colour = "#E66447", se = F, size = 0.1, alpha = 0.4) +
+                       geom_point(colour = "#3B9AB2", alpha = 0.4) +
+                       stat_summary(aes(group = 1), geom = "line", fun.y = mean, colour = "#3B9AB2", size = 3, alpha = 0.4) +
                        xlab("Year") +
                        ylab("Population Size\n") +
                        ylim(0,350) +
@@ -303,11 +230,10 @@ plot_all_f <- ggplot(pop_all_f, aes(x = pop_year, y = total_pop, group = sim_num
                        panel.border = element_blank(),
                        panel.background = element_blank())
 
-
 #  Plots for males
 plot_1_m <- ggplot(pop_age1_m, aes(x = Year, y = value, group = simulation)) + 
                        geom_point(colour = "#3B9AB2", alpha = 0.4) +
-                       geom_line(stat="smooth", method = "loess", colour = "#78B7C5", se = F, size = 0.1, alpha = 0.4) +
+                      stat_summary(aes(group = 1), geom = "line", fun.y = mean, colour = "#3B9AB2", size = 3, alpha = 0.4) +
                        xlab("Year") +
                        ylab("Population Size\n") +
                        ylim(0,100) +
@@ -322,7 +248,7 @@ plot_1_m <- ggplot(pop_age1_m, aes(x = Year, y = value, group = simulation)) +
 
 plot_2_m <- ggplot(pop_age2_m, aes(x = Year, y = value, group = simulation)) + 
                        geom_point(colour = "#E1AF00", alpha = 0.4) +
-                       geom_line(stat="smooth", method = "loess", colour = "#EBCC2A", se = F, size = 0.1, alpha = 0.4) +
+                        stat_summary(aes(group = 1), geom = "line", fun.y = mean, colour = "#E1AF00", size = 3, alpha = 0.4) +
                        xlab("Year") +
                        ylab("Population Size\n") +
                        ylim(0,100) +
@@ -337,7 +263,7 @@ plot_2_m <- ggplot(pop_age2_m, aes(x = Year, y = value, group = simulation)) +
 
 plot_3_m <- ggplot(pop_age3_m, aes(x = Year, y = value, group = simulation)) + 
                        geom_point(colour = "#446455", alpha = 0.4) +
-                       geom_line(stat="smooth", method = "loess", colour = "#81A88D", se = F, size = 0.1, alpha = 0.4) +
+                       stat_summary(aes(group = 1), geom = "line", fun.y = mean, colour = "#446455", size = 3, alpha = 0.4) +
                        xlab("Year") +
                        ylab("Population Size\n") +
                        ylim(0,100) +
@@ -352,7 +278,7 @@ plot_3_m <- ggplot(pop_age3_m, aes(x = Year, y = value, group = simulation)) +
 
 plot_4_m <- ggplot(pop_age4_m, aes(x = Year, y = value, group = simulation)) + 
                        geom_point(colour = "#972D15", alpha = 0.4) +
-                       geom_line(stat="smooth", method = "loess", colour = "#E66447", se = F, size = 0.1, alpha = 0.4) +
+                      stat_summary(aes(group = 1), geom = "line", fun.y = mean, colour = "#972D15", size = 3, alpha = 0.4) +
                        xlab("Year") +
                        ylab("Population Size\n") +
                        ylim(0,200) +
@@ -367,7 +293,7 @@ plot_4_m <- ggplot(pop_age4_m, aes(x = Year, y = value, group = simulation)) +
 
 plot_all_m <- ggplot(pop_all_m, aes(x = pop_year, y = total_pop, group = sim_num)) + 
                        geom_point(colour = "#972D15", alpha = 0.4) +
-                       geom_line(stat="smooth", method = "loess", colour = "#E66447", se = F, size = 0.1, alpha = 0.4) +
+                       stat_summary(aes(group = 1), geom = "line", fun.y = mean, colour = "#972D15", size = 3, alpha = 0.4) +
                        xlab("Year") +
                        ylab("Population Size\n") +
                        ylim(0,350) +
@@ -379,6 +305,7 @@ plot_all_m <- ggplot(pop_all_m, aes(x = pop_year, y = total_pop, group = sim_num
                        panel.grid.minor = element_blank(),
                        panel.border = element_blank(),
                        panel.background = element_blank())
+
 
 #  Function to put mulitplots on same page from http://www.cookbook-r.com/
 multiplot <- function(..., plotlist=NULL, file, cols=1, layout=NULL) {
@@ -417,6 +344,9 @@ multiplot <- function(..., plotlist=NULL, file, cols=1, layout=NULL) {
   }
 }
 
+
+
+
 #  Final plots
 all_plots_f <- multiplot(plot_1_f, plot_2_f, plot_3_f, plot_4_f, cols=2)
 all_plots_m <- multiplot(plot_1_m, plot_2_m, plot_3_m, plot_4_m, cols=2)
@@ -424,11 +354,14 @@ all_plots_both <- multiplot(plot_1_f, plot_2_f, plot_3_f, plot_4_f, plot_1_m, pl
 all_plots_both_tot <- multiplot(plot_all_f, plot_all_m, cols=2)
 
 
-#  Alternative using means to fit a line
+
+
+
+#  Alternative plotting methods using geom_line(method = "loess") to make smooth line and leaving points invisible.
+#  Plots for females
 plot_1_f <- ggplot(pop_age1_f, aes(x = Year, y = value, group = simulation)) + 
-                       geom_point(colour = "#3B9AB2", alpha = 0.4) +
-                       #geom_line(stat="smooth", method = "loess", colour = "#78B7C5", se = F, size = 0.1, alpha = 0.4) +
-                       stat_summary(aes(group = 1), geom = "line", fun.y = mean, colour = "#3B9AB2", size = 3, alpha = 0.4) +
+                       #geom_point(colour = "#3B9AB2", alpha = 0.4) +
+                       geom_line(stat="smooth", method = "loess", colour = "#78B7C5", se = F, size = 0.1, alpha = 0.4) +
                        xlab("Year") +
                        ylab("Population Size\n") +
                        ylim(0,100) +
@@ -442,9 +375,8 @@ plot_1_f <- ggplot(pop_age1_f, aes(x = Year, y = value, group = simulation)) +
                        panel.background = element_blank())
 
 plot_2_f <- ggplot(pop_age2_f, aes(x = Year, y = value, group = simulation)) + 
-                       geom_point(colour = "#E1AF00", alpha = 0.4) +
-                      #geom_line(stat="smooth", method = "loess", colour = "#78B7C5", se = F, size = 0.1, alpha = 0.4) +
-                       stat_summary(aes(group = 1), geom = "line", fun.y = mean, colour = "#E1AF00", size = 3, alpha = 0.4) +
+                       #geom_point(colour = "#E1AF00", alpha = 0.4) +
+                       geom_line(stat="smooth", method = "loess", colour = "#EBCC2A", se = F, size = 0.1, alpha = 0.4) +
                        xlab("Year") +
                        ylab("Population Size\n") +
                        ylim(0,100) +
@@ -458,9 +390,8 @@ plot_2_f <- ggplot(pop_age2_f, aes(x = Year, y = value, group = simulation)) +
                        panel.background = element_blank())
 
 plot_3_f <- ggplot(pop_age3_f, aes(x = Year, y = value, group = simulation)) + 
-                       geom_point(colour = "#446455", alpha = 0.4) +
-                       #geom_line(stat="smooth", method = "loess", colour = "#78B7C5", se = F, size = 0.1, alpha = 0.4) +
-                       stat_summary(aes(group = 1), geom = "line", fun.y = mean, colour = "#446455", size = 3, alpha = 0.4) +
+                       #geom_point(colour = "#446455", alpha = 0.4) +
+                       geom_line(stat="smooth", method = "loess", colour = "#81A88D", se = F, size = 0.1, alpha = 0.4) +
                        xlab("Year") +
                        ylab("Population Size\n") +
                        ylim(0,100) +
@@ -474,9 +405,8 @@ plot_3_f <- ggplot(pop_age3_f, aes(x = Year, y = value, group = simulation)) +
                        panel.background = element_blank())
 
 plot_4_f <- ggplot(pop_age4_f, aes(x = Year, y = value, group = simulation)) + 
-                       geom_point(colour = "#972D15", alpha = 0.4) +
-                       #geom_line(stat="smooth", method = "loess", colour = "#78B7C5", se = F, size = 0.1, alpha = 0.4) +
-                       stat_summary(aes(group = 1), geom = "line", fun.y = mean, colour = "#972D15", size = 3, alpha = 0.4) +
+                       #geom_point(colour = "#972D15", alpha = 0.4) +
+                       geom_line(stat="smooth", method = "loess", colour = "#E66447", se = F, size = 0.1, alpha = 0.4) +
                        xlab("Year") +
                        ylab("Population Size\n") +
                        ylim(0,200) +
@@ -490,9 +420,8 @@ plot_4_f <- ggplot(pop_age4_f, aes(x = Year, y = value, group = simulation)) +
                        panel.background = element_blank())
 
 plot_all_f <- ggplot(pop_all_f, aes(x = pop_year, y = total_pop, group = sim_num)) + 
-                       geom_point(colour = "#3B9AB2", alpha = 0.4) +
-                       #geom_line(stat="smooth", method = "loess", colour = "#E66447", se = F, size = 0.1, alpha = 0.4) +
-                       stat_summary(aes(group = 1), geom = "line", fun.y = mean, colour = "#3B9AB2", size = 3, alpha = 0.4) +
+                       #geom_point(colour = "#972D15", alpha = 0.4) +
+                       geom_line(stat="smooth", method = "loess", colour = "#E66447", se = F, size = 0.1, alpha = 0.4) +
                        xlab("Year") +
                        ylab("Population Size\n") +
                        ylim(0,350) +
@@ -505,11 +434,11 @@ plot_all_f <- ggplot(pop_all_f, aes(x = pop_year, y = total_pop, group = sim_num
                        panel.border = element_blank(),
                        panel.background = element_blank())
 
+
 #  Plots for males
 plot_1_m <- ggplot(pop_age1_m, aes(x = Year, y = value, group = simulation)) + 
-                       geom_point(colour = "#3B9AB2", alpha = 0.4) +
-                      #geom_line(stat="smooth", method = "loess", colour = "#78B7C5", se = F, size = 0.1, alpha = 0.4) +
-                       stat_summary(aes(group = 1), geom = "line", fun.y = mean, colour = "#3B9AB2", size = 3, alpha = 0.4) +
+                       #geom_point(colour = "#3B9AB2", alpha = 0.4) +
+                       geom_line(stat="smooth", method = "loess", colour = "#78B7C5", se = F, size = 0.1, alpha = 0.4) +
                        xlab("Year") +
                        ylab("Population Size\n") +
                        ylim(0,100) +
@@ -523,9 +452,8 @@ plot_1_m <- ggplot(pop_age1_m, aes(x = Year, y = value, group = simulation)) +
                        panel.background = element_blank())
 
 plot_2_m <- ggplot(pop_age2_m, aes(x = Year, y = value, group = simulation)) + 
-                       geom_point(colour = "#E1AF00", alpha = 0.4) +
-                       #geom_line(stat="smooth", method = "loess", colour = "#78B7C5", se = F, size = 0.1, alpha = 0.4) +
-                       stat_summary(aes(group = 1), geom = "line", fun.y = mean, colour = "#E1AF00", size = 3, alpha = 0.4) +
+                       #geom_point(colour = "#E1AF00", alpha = 0.4) +
+                       geom_line(stat="smooth", method = "loess", colour = "#EBCC2A", se = F, size = 0.1, alpha = 0.4) +
                        xlab("Year") +
                        ylab("Population Size\n") +
                        ylim(0,100) +
@@ -539,9 +467,8 @@ plot_2_m <- ggplot(pop_age2_m, aes(x = Year, y = value, group = simulation)) +
                        panel.background = element_blank())
 
 plot_3_m <- ggplot(pop_age3_m, aes(x = Year, y = value, group = simulation)) + 
-                       geom_point(colour = "#446455", alpha = 0.4) +
-                       #geom_line(stat="smooth", method = "loess", colour = "#78B7C5", se = F, size = 0.1, alpha = 0.4) +
-                       stat_summary(aes(group = 1), geom = "line", fun.y = mean, colour = "#446455", size = 3, alpha = 0.4) +
+                       #geom_point(colour = "#446455", alpha = 0.4) +
+                       geom_line(stat="smooth", method = "loess", colour = "#81A88D", se = F, size = 0.1, alpha = 0.4) +
                        xlab("Year") +
                        ylab("Population Size\n") +
                        ylim(0,100) +
@@ -555,9 +482,8 @@ plot_3_m <- ggplot(pop_age3_m, aes(x = Year, y = value, group = simulation)) +
                        panel.background = element_blank())
 
 plot_4_m <- ggplot(pop_age4_m, aes(x = Year, y = value, group = simulation)) + 
-                       geom_point(colour = "#972D15", alpha = 0.4) +
-                      #geom_line(stat="smooth", method = "loess", colour = "#78B7C5", se = F, size = 0.1, alpha = 0.4) +
-                       stat_summary(aes(group = 1), geom = "line", fun.y = mean, colour = "#972D15", size = 3, alpha = 0.4) +
+                      #geom_point(colour = "#972D15", alpha = 0.4) +
+                       geom_line(stat="smooth", method = "loess", colour = "#E66447", se = F, size = 0.1, alpha = 0.4) +
                        xlab("Year") +
                        ylab("Population Size\n") +
                        ylim(0,200) +
@@ -571,9 +497,8 @@ plot_4_m <- ggplot(pop_age4_m, aes(x = Year, y = value, group = simulation)) +
                        panel.background = element_blank())
 
 plot_all_m <- ggplot(pop_all_m, aes(x = pop_year, y = total_pop, group = sim_num)) + 
-                       geom_point(colour = "#972D15", alpha = 0.4) +
-                       #geom_line(stat="smooth", method = "loess", colour = "#E66447", se = F, size = 0.1, alpha = 0.4) +
-                       stat_summary(aes(group = 1), geom = "line", fun.y = mean, colour = "#972D15", size = 3, alpha = 0.4) +
+                       #geom_point(colour = "#972D15", alpha = 0.4) +
+                       geom_line(stat="smooth", method = "loess", colour = "#E66447", se = F, size = 0.1, alpha = 0.4) +
                        xlab("Year") +
                        ylab("Population Size\n") +
                        ylim(0,350) +
@@ -585,10 +510,7 @@ plot_all_m <- ggplot(pop_all_m, aes(x = pop_year, y = total_pop, group = sim_num
                        panel.grid.minor = element_blank(),
                        panel.border = element_blank(),
                        panel.background = element_blank())
-
-
-
-
+                       
 # #  Older versions of data arrangement
 # f_N_1 <- cbind(as.data.frame(f_N_mat1), sex_f)
 # m_N_1 <- cbind(as.data.frame(m_N_mat1), sex_m)
